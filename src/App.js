@@ -3,17 +3,25 @@ import logo from './logo.svg';
 import './App.css';
 import MainPage from './pages/main';
 import styled from 'styled-components'
-import GoogleDriveAuthorizeButton from './components/googleDrive/authorizeButton'
+import GoogleLogin from './containers/storage/remote'
 
 class App extends Component {
   constructor(){
     super()
+    this.googleLogin = new GoogleLogin()
   }
 
   callback = (response) => {
     this.google = response;
   }
 
+  componentDidMount(){
+    this.googleLogin.loadOauth2({
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      clientId: "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
+    })
+    //this.googleLogin.signIn()
+  }
 
   render() {
     return (
@@ -22,7 +30,8 @@ class App extends Component {
           <img src={logo} className="App-logo" alt="logo" />
           <h1 className="App-title">Welcome to write porgram</h1>
         </header>
-        <GoogleDriveAuthorizeButton style={{color: 'green', backgroundColor: 'yellow', height: '20px', width: '120px'}}/>
+        <button onClick={this.googleLogin.signIn}>Login</button>
+        <button onClick={this.googleLogin.signOut}>Logout</button>
         <MainPage />
       </div>
     );
