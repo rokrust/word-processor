@@ -21,56 +21,20 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 
 
-export default class GoogleLogin extends Component {
-  constructor(props) {
-    super(props)    
+export default class GoogleLogin{
+  constructor(options) {
     this.google = undefined
-
+    this.options = options
   }
 
-    componentDidMount() {
-        /*const {
-            clientId,
-            cookiePolicy,
-            loginHint,
-            hostedDomain,
-            isSignedIn,
-            fetchBasicProfile,
-            redirectUri,
-            discoveryDocs,
-            onFailure,
-            uxMode,
-            scope,
-            accessType,
-            responseType,
-            jsSrc
-        } = this.props;*/
-
-        /*this.params = {
-            client_id: this.props.clientId,
-            cookie_policy: this.props.cookiePolicy,
-            login_hint: this.props.loginHint,
-            hosted_domain: this.props.hostedDomain,
-            fetch_basic_profile: this.props.fetchBasicProfile,
-            ux_mode: this.props.uxMode,
-            redirect_uri: this.props.redirectUri,
-            scope: this.props.scope,
-            access_type: this.props.accessType
-        }
-        console.log(window)*/
-        this.loadOauth2();
-    }
-
-    loadOauth2 = (options) => {
-        console.log(window)
+    loadOauth2 = () => {
         window.gapi.load('auth2', () => {
             if (!window.gapi.auth2.getAuthInstance()) {
-                window.gapi.auth2.init(options)
+                window.gapi.auth2.init(this.options)
                 .then(res => {
                     if (res.isSignedIn.get()) {
                         this.handleSigninSuccess(res.currentUser.get())
                     }
-                    //this.signIn()
                 }, 
                 err => this.props.onFailure(err))
             }                

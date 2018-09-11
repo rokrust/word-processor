@@ -8,7 +8,11 @@ import GoogleLogin from './containers/storage/remote'
 class App extends Component {
   constructor(){
     super()
-    this.googleLogin = new GoogleLogin()
+    this.googleLogin = new GoogleLogin({
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      client_id: "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com",
+    })
+    //console.log(this.googleLogin)
   }
 
   callback = (response) => {
@@ -16,11 +20,7 @@ class App extends Component {
   }
 
   componentDidMount(){
-    this.googleLogin.loadOauth2({
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      clientId: "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
-    })
-    //this.googleLogin.signIn()
+    this.googleLogin.loadOauth2()
   }
 
   render() {
