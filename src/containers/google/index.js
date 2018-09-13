@@ -1,12 +1,4 @@
-//Ordne credentials
-    //https://console.developers.google.com/apis/credentials/wizard?project=genetic-image-segmentation
-//Google permission scope
-    //https://developers.google.com/drive/api/v2/about-auth
-//API documentation
-    //https://developers.google.com/identity/sign-in/web/reference#googleauthsignin
-//Have to run <script src='https://apis.google.com/js/client:platform.js' />
-
-//https://hackernoon.com/tutorial-how-to-make-http-requests-in-react-part-1-f7afa3cd0cc8
+import Drive from './drive'
 
 const CLIENT_ID = "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
 const CLIENT_SECRET = "HGl021T_LJQv23jZwX1gOghy"
@@ -14,10 +6,11 @@ const API_KEY = 'AIzaSyDfCxUs9LGP7ZHJJQBRo5ac2NdGgMuqvQg';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 
-export default class GoogleLogin{
-  constructor() {
-    this.google = undefined
-  }
+export default class Google{
+    constructor() {
+        this.google = undefined
+        this.drive = new Drive()
+    }
 
     initialize = (options) => {
         window.gapi.load('auth2', () => {
@@ -27,10 +20,19 @@ export default class GoogleLogin{
                     if (res.isSignedIn.get()) {
                         this.handleSigninSuccess(res.currentUser.get())
                     }
+                    this.signIn()
+                    window.gapi.load('client', () => {})
                 }, 
                 err => alert(err))
             }                
         })
+
+        /*window.gapi.load('drive', 'v2', () => {
+            console.log("Drive loaded")
+            console.log(window.gapi.client)
+            this.drive.listFiles();
+        })*/
+
     }
   
     signIn = () => {
