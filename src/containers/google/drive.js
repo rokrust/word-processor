@@ -5,9 +5,24 @@ export default class Drive{
 
     }
 
+    *list() {
+        let request = window.gapi.client.drive.files.list();
+        let token = true
+
+        while(token){ //Until last paged reached
+            yield* request.execute(resp => {
+                return resp.items;
+            })
+        }
+    }
+
     listFiles = () => {
-        console.log(window.gapi)
-        console.log(window.gapi.client)
+        /*let request = window.gapi.client.drive.files.list();
+        console.log(request)
+        let yolo = request.execute(resp => {console.log(resp)});
+        console.log(yolo)*/
+        
+        console.log("Retrieving files")
         var retrievePageOfFiles = function(request, result) {
             request.execute(function(resp) {
                 result = result.concat(resp.items);
@@ -16,15 +31,15 @@ export default class Drive{
                     request = window.gapi.client.drive.files.list({
                     'pageToken': nextPageToken
                 });
-                
+                console.log(resp)
                 retrievePageOfFiles(request, result);
               
                 } else {
-                    alert(result);
+                    console.log(result);
                 }
             });
         }
-          
+        
         var initialRequest = window.gapi.client.drive.files.list();  
         retrievePageOfFiles(initialRequest, []);
     }

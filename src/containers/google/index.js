@@ -3,8 +3,9 @@ import Drive from './drive'
 const CLIENT_ID = "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
 const CLIENT_SECRET = "HGl021T_LJQv23jZwX1gOghy"
 const API_KEY = 'AIzaSyDfCxUs9LGP7ZHJJQBRo5ac2NdGgMuqvQg';
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
 
+const DRIVE_API = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 
 export default class Google{
     constructor() {
@@ -13,26 +14,27 @@ export default class Google{
     }
 
     initialize = (options) => {
-        window.gapi.load('auth2', () => {
+        window.gapi.load('client:auth2', () => {
             if (!window.gapi.auth2.getAuthInstance()) {
                 window.gapi.auth2.init(options)
                 .then(res => {
                     if (res.isSignedIn.get()) {
                         this.handleSigninSuccess(res.currentUser.get())
                     }
-                    this.signIn()
-                    window.gapi.load('client', () => {})
+                    window.gapi.client.init({
+                        apiKey: API_KEY,
+                        discoveryDocs: [DRIVE_API],
+                        clientId: CLIENT_ID,
+                        scope: DRIVE_SCOPE
+                    })
+                    .then(() => this.drive.listFiles())
                 }, 
                 err => alert(err))
             }                
         })
 
-        /*window.gapi.load('drive', 'v2', () => {
-            console.log("Drive loaded")
-            console.log(window.gapi.client)
-            this.drive.listFiles();
-        })*/
-
+        //window.gapi.client.load(DRIVE_API)
+        //.then(() => console.log(window.gapi.client.drive))
     }
   
     signIn = () => {
