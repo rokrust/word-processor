@@ -2,7 +2,6 @@
 
 export default class Drive{
     constructor(){
-
     }
 
     *list() {
@@ -10,28 +9,23 @@ export default class Drive{
         let token = true
 
         while(token){ //Until last paged reached
-            yield* request.execute(resp => {
-                return resp.items;
+            request.execute(resp => {
+                //yield* resp.items;
             })
         }
     }
 
-    listFiles = () => {
-        /*let request = window.gapi.client.drive.files.list();
-        console.log(request)
-        let yolo = request.execute(resp => {console.log(resp)});
-        console.log(yolo)*/
-        
+    listFiles = () => {        
         console.log("Retrieving files")
+
         var retrievePageOfFiles = function(request, result) {
             request.execute(function(resp) {
                 result = result.concat(resp.items);
                 var nextPageToken = resp.nextPageToken;
                 if (nextPageToken) {
                     request = window.gapi.client.drive.files.list({
-                    'pageToken': nextPageToken
+                    pageToken: nextPageToken
                 });
-                console.log(resp)
                 retrievePageOfFiles(request, result);
               
                 } else {

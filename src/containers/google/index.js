@@ -1,45 +1,86 @@
 import Drive from './drive'
 
 const CLIENT_ID = "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
-const CLIENT_SECRET = "HGl021T_LJQv23jZwX1gOghy"
 const API_KEY = 'AIzaSyDfCxUs9LGP7ZHJJQBRo5ac2NdGgMuqvQg';
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+//const CLIENT_SECRET = "HGl021T_LJQv23jZwX1gOghy"
 
-const DRIVE_API = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+
+//List of scopes
+    //https://developers.google.com/identity/protocols/googlescopes
+//Discovery URI
+    //https://developers.google.com/discovery/v1/reference/
+
+const API_OBJECTS = {
+    drive: Drive
+}
 
 export default class Google{
-    constructor() {
-        this.google = undefined
-        this.drive = new Drive()
-    }
+    constructor(requestedApis) {
+        this.apiURLs = [];
+        this.scopes = ""
 
-    initialize = (options) => {
+        for (let key in requestedApis){
+            let currentApi = requestedApis[key]
+
+            this.scopes += this._createScopeURL(key, currentApi.permission) + ' '
+            this.apiURLs.push(this._createApiDiscoveryUrl(key, currentApi.version))
+            this._setApiObject(key, currentApi.object)
+        }
+        
+        this.scopes = this.scopes.slice(0, -1)
+    }   
+
+    initialize = () => {
         window.gapi.load('client:auth2', () => {
             if (!window.gapi.auth2.getAuthInstance()) {
-                window.gapi.auth2.init(options)
+                window.gapi.auth2.init({
+                    scope: this.scopes,
+                    client_id: CLIENT_ID
+                })
                 .then(res => {
-                    if (res.isSignedIn.get()) {
-                        this.handleSigninSuccess(res.currentUser.get())
-                    }
-                    window.gapi.client.init({
-                        apiKey: API_KEY,
-                        discoveryDocs: [DRIVE_API],
-                        clientId: CLIENT_ID,
-                        scope: DRIVE_SCOPE
-                    })
-                    .then(() => this.drive.listFiles())
+                    this.google = res
+                    this._initClient().then(() => this.drive.listFiles())        
                 }, 
                 err => alert(err))
             }                
         })
-
-        //window.gapi.client.load(DRIVE_API)
-        //.then(() => console.log(window.gapi.client.drive))
     }
-  
+
+    _createApiDiscoveryUrl(api, version) {
+        return 'https://www.googleapis.com/discovery/v1/apis/' + api + '/' + version + '/rest'
+    }
+
+    _createScopeURL(api, permission) {
+        let scopeLink = 'https://www.googleapis.com/auth/' + api
+        return permission ? scopeLink + '.' + permission : scopeLink
+    }
+    
+    //Sets the api member object if it is provided
+    //Checks the objects provided by default if not
+    //Alerts the user if no object can be found
+    _setApiObject = (api, apiObject) => {
+        if(apiObject){
+            this[api] = new apiObject()
+            return
+        } else if(API_OBJECTS[api]) {
+            this[api] = new API_OBJECTS[api]()
+        } else {
+            alert("No object attached to api " + api)
+        }
+    }
+
+    _initClient() {
+        return window.gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: this.apiURLs,
+            clientId: CLIENT_ID,
+            scope: this.scopes
+        })
+    }
+
     signIn = () => {
         const auth2 = window.gapi.auth2.getAuthInstance()
-        auth2.signIn().then(res => this.handleSigninSuccess(res), err => alert(err))
+        auth2.signIn()
     }
 
     signInOffline = () => {
@@ -54,24 +95,5 @@ export default class Google{
             auth2.signOut().then(() => console.log("Logged out of google"))
         }
         else { console.log("Auth not defined") }
-    }
-
-    handleSigninSuccess(res) {
-        const basicProfile = res.getBasicProfile()
-        const authResponse = res.getAuthResponse()
-        res.googleId = basicProfile.getId()
-        res.tokenObj = authResponse
-        res.tokenId = authResponse.id_token
-        res.accessToken = authResponse.access_token
-        res.profileObj = {
-            googleId: basicProfile.getId(),
-            imageUrl: basicProfile.getImageUrl(),
-            email: basicProfile.getEmail(),
-            name: basicProfile.getName(),
-            givenName: basicProfile.getGivenName(),
-            familyName: basicProfile.getFamilyName()
-        }
-        
-        this.google = res
     }
 }
