@@ -4,16 +4,13 @@ import './App.css';
 import MainPage from './pages/main';
 import styled from 'styled-components'
 import Google from './containers/google'
-import Drive from './containers/google/drive'
-
-class Calendar {}
 
 class App extends Component {
   constructor(){
     super()
     this.google = new Google({
       drive: {
-        permission: 'file',
+        permission: '',
         version: 'v3',
       },
     })
@@ -25,7 +22,7 @@ class App extends Component {
 
   componentDidMount(){
     this.google.initialize()
-    console.log(this.google)
+    this.yolo = this.google.drive.list()
   }
 
   render() {

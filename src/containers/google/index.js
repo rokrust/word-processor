@@ -1,9 +1,5 @@
 import Drive from './drive'
-
-const CLIENT_ID = "774881068724-a2n55qo2us5dmvt9621demginbgbbii7.apps.googleusercontent.com"
-const API_KEY = 'AIzaSyDfCxUs9LGP7ZHJJQBRo5ac2NdGgMuqvQg';
-//const CLIENT_SECRET = "HGl021T_LJQv23jZwX1gOghy"
-
+var config = require('../../config')
 
 //List of scopes
     //https://developers.google.com/identity/protocols/googlescopes
@@ -16,15 +12,17 @@ const API_OBJECTS = {
 
 export default class Google{
     constructor(requestedApis) {
+        console.log("Constructing google object")
+        console.log(config)
         this.apiURLs = [];
         this.scopes = ""
 
-        for (let key in requestedApis){
-            let currentApi = requestedApis[key]
+        for (let api in requestedApis){
+            let apiOpts = requestedApis[api]
 
-            this.scopes += this._createScopeURL(key, currentApi.permission) + ' '
-            this.apiURLs.push(this._createApiDiscoveryUrl(key, currentApi.version))
-            this._setApiObject(key, currentApi.object)
+            this.scopes += this._createScopeURL(api, apiOpts.permission) + ' '
+            this.apiURLs.push(this._createApiDiscoveryUrl(api, apiOpts.version))
+            this._setApiObject(api, apiOpts.object)
         }
         
         this.scopes = this.scopes.slice(0, -1)
@@ -35,11 +33,11 @@ export default class Google{
             if (!window.gapi.auth2.getAuthInstance()) {
                 window.gapi.auth2.init({
                     scope: this.scopes,
-                    client_id: CLIENT_ID
+                    client_id: config.CLIENT_ID
                 })
                 .then(res => {
                     this.google = res
-                    this._initClient().then(() => this.drive.listFiles())        
+                    this._initClient()
                 }, 
                 err => alert(err))
             }                
@@ -71,9 +69,9 @@ export default class Google{
 
     _initClient() {
         return window.gapi.client.init({
-            apiKey: API_KEY,
+            apiKey: config.API_KEY,
             discoveryDocs: this.apiURLs,
-            clientId: CLIENT_ID,
+            clientId: config.CLIENT_ID,
             scope: this.scopes
         })
     }
