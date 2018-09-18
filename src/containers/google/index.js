@@ -1,4 +1,5 @@
 import Drive from './drive'
+
 var config = require('../../config')
 
 //List of scopes
@@ -12,8 +13,6 @@ const API_OBJECTS = {
 
 export default class Google{
     constructor(requestedApis) {
-        console.log("Constructing google object")
-        console.log(config)
         this.apiURLs = [];
         this.scopes = ""
 

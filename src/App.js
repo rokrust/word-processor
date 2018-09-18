@@ -10,7 +10,7 @@ class App extends Component {
     super()
     this.google = new Google({
       drive: {
-        permission: '',
+        permission: 'file',
         version: 'v3',
       },
     })
@@ -22,10 +22,10 @@ class App extends Component {
 
   componentDidMount(){
     this.google.initialize()
-    this.yolo = this.google.drive.list()
   }
 
   render() {
+    
     return (
       <div className="App">
         <header className="App-header">
@@ -33,7 +33,13 @@ class App extends Component {
           <h1 className="App-title">Welcome to write porgram</h1>
         </header>
         <button onClick={this.google.signIn}>Login</button>
-        <button onClick={this.google.signOut}>Logout</button>
+        <button onClick={() => {
+          this.google.drive.listFile.next().value
+          .then(resp => {
+            console.log(resp.files)
+            this.google.drive.getFile(resp.files[0].id)
+          })
+        }}>Logout</button>
         <MainPage />
       </div>
     );
@@ -45,4 +51,5 @@ const AuthorizeButton = styled.button`
   background: blue;
   color: green;
 `;
+
 export default App;
