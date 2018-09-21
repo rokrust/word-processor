@@ -10,7 +10,7 @@ class App extends Component {
     super()
     this.google = new Google({
       drive: {
-        permission: 'file',
+        permission: '',
         version: 'v3',
       },
     })
@@ -37,7 +37,8 @@ class App extends Component {
           this.google.drive.listFile.next().value
           .then(resp => {
             console.log(resp.files)
-            this.google.drive.getFile(resp.files[0].id)
+            //this.google.drive.getFile({dir: resp.files[0].name, id: resp.files[0].id})
+            this.google.drive.createFile('fillertext.txt').then((resp) => this.google.drive.updateFile({id: resp.result.id, dir: 'newtest.txt'}))
           })
         }}>Logout</button>
         <MainPage />

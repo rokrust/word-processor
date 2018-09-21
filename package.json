@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "ajax": "0.0.4",
+    "axios": "^0.18.0",
     "electron-is-dev": "^0.3.0",
     "gapi-client": "0.0.3",
     "googleapis": "^27.0.0",
