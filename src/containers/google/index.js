@@ -1,11 +1,20 @@
 import Drive from './drive'
-
-var config = require('../../config')
+//import { OAuth2Client } from 'google-auth-library';
+//var config = require('../../config')
+//const readline = window.require('readline')
+const fs = window.require('fs')
+const config = window.require('dotenv').config().parsed
+const {google} = window.require('googleapis')
 
 //List of scopes
     //https://developers.google.com/identity/protocols/googlescopes
 //Discovery URI
     //https://developers.google.com/discovery/v1/reference/
+
+
+const GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+const GOOGLE_TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token'
+const GOOGLE_PROFILE_URL = 'https://www.googleapis.com/userinfo/v2/me'
 
 const API_OBJECTS = {
     drive: Drive
@@ -14,53 +23,73 @@ const API_OBJECTS = {
 export default class Google{
     constructor(requestedApis) {
         this.apiURLs = [];
-        this.scopes = ""
-
+        this.scopes = [];
+        this.token_path = "config/token.json";
+        
         for (let api in requestedApis){
             let apiOpts = requestedApis[api]
 
-            this.scopes += this._createScopeURL(api, apiOpts.permission) + ' '
+            this.scopes.push(this._createScopeURL(api, apiOpts.permission))
             this.apiURLs.push(this._createApiDiscoveryUrl(api, apiOpts.version))
-            this._setApiObject(api, apiOpts.object)
+            this._setApiObject(api, apiOpts.object, this.oauth2Client)
         }
-        
-        this.scopes = this.scopes.slice(0, -1)
+        this.scopes = this.scopes.join(' ')
+
+
+        this.oauth2Client = new google.auth.OAuth2(
+            config.CLIENT_ID,
+            config.CLIENT_SECRET,
+            config.REDIRECT_URI
+        );
     }   
 
     initialize = () => {
-        window.gapi.load('client:auth2', () => {
-            if (!window.gapi.auth2.getAuthInstance()) {
-                window.gapi.auth2.init({
-                    scope: this.scopes,
-                    client_id: config.CLIENT_ID
-                })
-                .then(res => {
-                    this.google = res
-                    this._initClient()
-                }, 
-                err => alert(err))
-            }                
-        })
+        console.log(this.generateAuthUrl())
     }
 
-    _createApiDiscoveryUrl(api, version) {
-        return 'https://www.googleapis.com/discovery/v1/apis/' + api + '/' + version + '/rest'
+    _authorize(credentials, callback) {
+        /*const {client_secret, client_id, redirect_uris} = credentials.installed;
+
+        this.oAuth2Client.setCredentials(JSON.parse(token));
+        callback(this.OAuth2Client)*/
     }
 
-    _createScopeURL(api, permission) {
-        let scopeLink = 'https://www.googleapis.com/auth/' + api
-        return permission ? scopeLink + '.' + permission : scopeLink
+    generateAuthUrl() {
+        return this.oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: this.scopes,
+        });
+    }
+    
+    setCredentials(code) {
+        //return new Promise(
+            //(resolve, reject) => {
+            this.oauth2Client.getToken(code, (err, token) => {
+                if(err) return console.error('Error retrieving access token', err)
+                this.oauth2Client.setCredentials(token)
+                console.log(token)
+                //resolve(token)
+                this.listFiles()
+            })
+        //})    
+    }
+
+    _storeToken(token) {
+        fs.writeFile(this.token_path, JSON.stringify(token), (err) => {
+            if (err) console.error(err);
+            console.log('Token stored to', this.token_path);
+        });
     }
     
     //Sets the api member object if it is provided
     //Checks the objects provided by default if not
     //Alerts the user if no object can be found
-    _setApiObject = (api, apiObject) => {
+    _setApiObject = (api, apiObject, auth) => {
         if(apiObject){
-            this[api] = new apiObject()
+            this[api] = new apiObject(auth)
             return
         } else if(API_OBJECTS[api]) {
-            this[api] = new API_OBJECTS[api]()
+            this[api] = new API_OBJECTS[api](auth)
         } else {
             alert("No object attached to api " + api)
         }
@@ -73,6 +102,34 @@ export default class Google{
             clientId: config.CLIENT_ID,
             scope: this.scopes
         })
+    }
+
+    listFiles() {
+        const drive = google.drive({version: 'v3', auth: this.oauth2Client});
+        drive.files.list({
+            pageSize: 10,
+            fields: 'nextPageToken, files(id, name)',
+        }, (err, res) => {
+            if (err) return console.log('The API returned an error: ' + err);
+            const files = res.data.files;
+            if (files.length) {
+                console.log('Files:');
+                files.map((file) => {
+                console.log(`${file.name} (${file.id})`);
+            });
+            } else {
+                console.log('No files found.');
+            }
+        });
+    }
+
+    _createApiDiscoveryUrl(api, version) {
+        return 'https://www.googleapis.com/discovery/v1/apis/' + api + '/' + version + '/rest'
+    }
+
+    _createScopeURL(api, permission) {
+        let scopeLink = 'https://www.googleapis.com/auth/' + api
+        return permission ? scopeLink + '.' + permission : scopeLink
     }
 
     signIn = () => {

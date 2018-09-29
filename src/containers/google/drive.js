@@ -3,8 +3,9 @@ const fs = window.require('fs');
 //UI list => google picker
 
 export default class Drive{
-    constructor(){
+    constructor(drive){
         this.fp = new Bulk()
+        this.drive = drive
     }
 
     listFile = function*() {
@@ -38,12 +39,6 @@ export default class Drive{
         });
         
         request.execute(res => console.log(res));
-        
-        /*window.gapi.client.drive.files.update({
-            fileId: file.id,
-            uploadType: 'resumable',
-            body: data
-        }).then(response => console.log(response))*/
     }
 
     //https://github.com/googleapis/google-api-nodejs-client
@@ -56,34 +51,25 @@ export default class Drive{
                 },
             }).then((resp) => resolve(resp))
         })
-
-        /*var request = window.gapi.client.request({
-            path: '/upload/drive/v3/files',
-            method: 'POST',
-            headers: {
-                name: "filler"
-            },
-            params: {
-                uploadType: 'multipart',
-            },
-            data: {
-                name: "filler"
-            },
-            body: data
-        });
-        
-        request.execute(res => console.log(res));*/
     }
+
 
 
     //https://stackoverflow.com/questions/23406391/basic-file-download-example
     //https://github.com/googleapis/google-api-nodejs-client
     //https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/drive/download.js
     getFile = (file) => {
-        console.log(file)
+        this.drive.files.get({
+            fileId: file.id,
+            alt: 'media'
+        })
+        .on('end', () => console.log("Done"))
+        .on('error', (err) => console.log("Error during download", err))
+        .pipe(this.fp);
+        /*console.log(file)
         window.gapi.client.drive.files.get({
             fileId: file.id,
             alt: 'media',
-        }).then(response => this.fp.writeFile(file.dir, response.body))
+        }).then(response => this.fp.writeFile(file.dir, response.body))*/
     }
 }

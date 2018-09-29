@@ -10,7 +10,7 @@ class App extends Component {
     super()
     this.google = new Google({
       drive: {
-        permission: '',
+        permission: 'metadata.readonly',
         version: 'v3',
       },
     })
@@ -33,24 +33,28 @@ class App extends Component {
           <h1 className="App-title">Welcome to write porgram</h1>
         </header>
         <button onClick={this.google.signIn}>Login</button>
-        <button onClick={() => {
-          this.google.drive.listFile.next().value
-          .then(resp => {
-            console.log(resp.files)
-            //this.google.drive.getFile({dir: resp.files[0].name, id: resp.files[0].id})
-            this.google.drive.createFile('fillertext.txt').then((resp) => this.google.drive.updateFile({id: resp.result.id, dir: 'newtest.txt'}))
-          })
-        }}>Logout</button>
+        <input type="text" onChange={(event) => this.google.setCredentials(event.target.value)}/>
         <MainPage />
       </div>
     );
   }
 }
 
+//ya29.GlsnBl6QnK4xZiCzggd0Q8RL66zvyAUMnjgH3WiOSDmsVlPvZzXtmRMUybR7D8TiqoMpTo_vE5CVVQZ9lyyoOue4bp1PVqTzdz46sZKdNQ99JFNsD0m5q5n6UXi0
+//ya29.GlsnBmoKk48Z2xkY_Xd2g6mScGYwFxo9zuxkC_5F5pXT_89csJZaURl9PmQTthPnjxqfq8Xlo9XB0jePCuRmWhR7sxtf-oqCUdOiZrVbkFr5o_i6EliCRz-ohQ1f
+
 const AuthorizeButton = styled.button`
   onClick: ${(props) => props.onClick};
   background: blue;
   color: green;
 `;
+
+const position = styled.div`
+  flex-direction: row;
+  flex: 2;
+  border-radius = 0.5;
+`;
+
+
 
 export default App;
