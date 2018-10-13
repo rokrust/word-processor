@@ -6,11 +6,11 @@ export default class FileService {
     constructor() {
         this.bulk = new Bulk()
     }
+
 }
 
 //Unsafe as of now. Does not await read/write async operation
 export class Bulk {
-    constructor(){}
 
     //Reads data from fileDir and supplies it to the callback function
     readFile(fileDir, encoding = 'utf-8') {

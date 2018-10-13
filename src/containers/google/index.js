@@ -1,4 +1,4 @@
-import Drive from './drive'
+import DriveV3 from './drive'
 //import { OAuth2Client } from 'google-auth-library';
 //var config = require('../../config')
 //const readline = window.require('readline')
@@ -12,96 +12,107 @@ const {google} = window.require('googleapis')
     //https://developers.google.com/discovery/v1/reference/
 
 
-const GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
-const GOOGLE_TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token'
-const GOOGLE_PROFILE_URL = 'https://www.googleapis.com/userinfo/v2/me'
-
 const API_OBJECTS = {
-    drive: Drive
+    drive: {
+        v3: DriveV3
+    }
 }
 
 export default class Google{
-    constructor(requestedApis) {
-        this.apiURLs = [];
+    constructor() {
         this.scopes = [];
-        this.token_path = "config/token.json";
-        
-        for (let api in requestedApis){
-            let apiOpts = requestedApis[api]
-
-            this.scopes.push(this._createScopeURL(api, apiOpts.permission))
-            this.apiURLs.push(this._createApiDiscoveryUrl(api, apiOpts.version))
-            this._setApiObject(api, apiOpts.object, this.oauth2Client)
-        }
-        this.scopes = this.scopes.join(' ')
-
 
         this.oauth2Client = new google.auth.OAuth2(
             config.CLIENT_ID,
             config.CLIENT_SECRET,
             config.REDIRECT_URI
         );
-    }   
 
-    initialize = () => {
-        console.log(this.generateAuthUrl())
     }
 
-    _authorize(credentials, callback) {
-        /*const {client_secret, client_id, redirect_uris} = credentials.installed;
 
-        this.oAuth2Client.setCredentials(JSON.parse(token));
-        callback(this.OAuth2Client)*/
-    }
-
-    generateAuthUrl() {
-        return this.oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            scope: this.scopes,
-        });
-    }
-    
-    setCredentials(code) {
-        //return new Promise(
-            //(resolve, reject) => {
-            this.oauth2Client.getToken(code, (err, token) => {
-                if(err) return console.error('Error retrieving access token', err)
+    //Initializes the google object with a stored token
+    //Returns: a promise that fails if no token is found
+    //Input: 
+    //  requestedApis: object containing apis to be used
+    //  tokenPath: path to token json file
+    initializeWithToken = (requestedApis, tokenPath) => {
+        return new Promise((resolve, reject) => {
+            this._readStoredToken(tokenPath)
+            .then(token => {
+                console.log("File found")
                 this.oauth2Client.setCredentials(token)
-                console.log(token)
-                //resolve(token)
-                this.listFiles()
+                console.log("Credentials set")
+
+                this.initialize(requestedApis)
+                console.log("API's loaded")
+
+                resolve()
             })
-        //})    
+            .catch(err => {
+                console.warn(`Could not find a token at "${tokenPath}".`)
+                reject()
+            })
+        })
     }
 
-    _storeToken(token) {
-        fs.writeFile(this.token_path, JSON.stringify(token), (err) => {
-            if (err) console.error(err);
-            console.log('Token stored to', this.token_path);
-        });
-    }
-    
-    //Sets the api member object if it is provided
-    //Checks the objects provided by default if not
-    //Alerts the user if no object can be found
-    _setApiObject = (api, apiObject, auth) => {
-        if(apiObject){
-            this[api] = new apiObject(auth)
-            return
-        } else if(API_OBJECTS[api]) {
-            this[api] = new API_OBJECTS[api](auth)
-        } else {
-            alert("No object attached to api " + api)
+
+    //Set api options and create api objects
+    initialize = (requestedApis) => {
+        console.log("Requesting apis")
+        for (let api in requestedApis){
+            let apiOpts = requestedApis[api]
+
+            this.scopes.push(this._createScopeURL(api, apiOpts.permission))
+            this._setApiObject(api, apiOpts)
         }
     }
 
-    _initClient() {
-        return window.gapi.client.init({
-            apiKey: config.API_KEY,
-            discoveryDocs: this.apiURLs,
-            clientId: config.CLIENT_ID,
-            scope: this.scopes
+
+    //Returns: an url string for accessing authCode
+    generateAuthUrl = () => {
+        console.log(this.scopes)
+        let link = this.oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: this.scopes.join(' '),
+        });
+
+        
+        return link
+    }
+    
+    //Authorizes the user by generating a token from the authcode
+    //Returns: promise, resolve(token)
+    authorizeWithCode(authCode) {
+        return new Promise((resolve, reject) => {
+            this.oauth2Client.getToken(authCode, (err, token) => {
+                if(err) reject(err)
+                else {
+                    this.oauth2Client.setCredentials(token)
+                    resolve(token)
+                }
+            })
+        })    
+    }
+
+
+    _readStoredToken(tokenPath) {
+        return new Promise((resolve, reject) => {
+            fs.readFile(tokenPath, (err, token) => {
+                if(err) reject(err)
+                else resolve(JSON.parse(token))
+            })
         })
+    }
+
+    storeToken(token, tokenPath) {
+        console.log(token)
+        console.log(tokenPath)
+        
+        fs.writeFile(tokenPath, JSON.stringify(token), (err) => {
+            if (err) console.error(err);
+            console.log('Token stored to', tokenPath);
+        });
     }
 
     listFiles() {
@@ -123,8 +134,27 @@ export default class Google{
         });
     }
 
-    _createApiDiscoveryUrl(api, version) {
-        return 'https://www.googleapis.com/discovery/v1/apis/' + api + '/' + version + '/rest'
+    //Sets the api member object if it is provided
+    //Checks the objects provided by default if not
+    //Alerts the user if no object can be found
+    _setApiObject = (api, apiOpts) => {
+        //Set authorization method. Oauth2 is default
+        let auth = apiOpts.auth ? apiOpts.auth : this.oauth2Client;
+
+        //Create the object for the given api with oauth
+        let apiObj = google[api]({version: apiOpts.version, auth})
+        
+        //Object supplied to constructor
+        if(apiOpts.object){
+            this[api] = new apiOpts.object(apiObj)
+
+        //No object supplied. Check if a default one is implemented
+        } else if(API_OBJECTS[api]) {
+            this[api] = new API_OBJECTS[api][apiOpts.version](apiObj)
+        
+        } else {
+            console.error(`No support for ${api} api. Attach a constructor function to the api request.`)
+        }
     }
 
     _createScopeURL(api, permission) {
@@ -132,22 +162,4 @@ export default class Google{
         return permission ? scopeLink + '.' + permission : scopeLink
     }
 
-    signIn = () => {
-        const auth2 = window.gapi.auth2.getAuthInstance()
-        auth2.signIn()
-    }
-
-    signInOffline = () => {
-        const auth2 = window.gapi.auth2.getAuthInstance()
-        auth2.grantOfflineAccess().then(res => this.google = res, err => alert(err))
-    }
-
-    signOut() {
-        const auth2 = window.gapi.auth2.getAuthInstance()
-        if (auth2 != null) {
-            auth2.disconnect()
-            auth2.signOut().then(() => console.log("Logged out of google"))
-        }
-        else { console.log("Auth not defined") }
-    }
 }

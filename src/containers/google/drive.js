@@ -1,56 +1,64 @@
-import {Bulk} from './../storage/local'
-const fs = window.require('fs');
 //UI list => google picker
+//import {promisify} from 'util'
 
-export default class Drive{
+//Needed for promisify to work
+const fs = window.require('fs')
+const util = require('util')
+require('util.promisify').shim();
+
+export default class DriveV3{
     constructor(drive){
-        this.fp = new Bulk()
         this.drive = drive
+        this.fields = new Set(['id', 'name'])
     }
 
-    listFile = function*() {
-        let nextPageToken = ''
+    addFields = (fields) => {
+        if(fields instanceof Array) fields.forEach((elem) => this.fields.add(elem))
+        else this.fields.add(fields)
+    }
 
-        do{
-            yield new Promise((resolve) => {
-                let request = window.gapi.client.drive.files.list({pageToken: nextPageToken, pageSize: 10})
-                request.execute((resp) => {
-                    nextPageToken = resp.nextPageToken
-                    return resolve(resp)
-                })
+    removeFields = (fields) => {
+        if(fields instanceof Array) fields.forEach((elem) => this.fields.delete(elem))
+        else this.fields.delete(fields)
+    }
+
+    _spreadFields = () => {
+        return Array.from(this.fields).join(', ')
+    }
+
+    listFolders = (pageSize, q, fields) => {
+        if(q) q = `mimeType='application/vnd.google-apps.folder' and ${q}`
+        else q = `mimeType='application/vnd.google-apps.folder'`
+        
+        return this.listFiles(pageSize, q, fields)
+    }
+
+    listFiles = (pageSize, q, fields) => {
+        return new Promise((resolve, reject) => {
+            this.drive.files.list({
+                q,
+                pageSize,
+                pageToken: this.nextPageToken,
+                fields: `nextPageToken, files(${fields || this._spreadFields()})`
+            }, (err, res) => {
+                if (err) reject(err)
+                else {
+                    this.nextPageToken = res.data.nextPageToken
+                    console.log(this.nextPageToken)
+                    resolve(res.data.files)
+                }
             })
-        } while(nextPageToken)
-    }()
+        })
+    }
 
     //https://stackoverflow.com/questions/40600725/google-drive-api-v3-javascript-update-file-contents
     updateFile = (file) => {
-        let data = this.fp.readFile(file.dir)
-        var request = window.gapi.client.request({
-            path: '/upload/drive/v3/files',
-            method: 'PATCH',
-            headers: {
-                id: file.id
-            },
-            params: {
-                uploadType: 'resumable',
-                alt: 'media'
-            },
-            body: data
-        });
-        
-        request.execute(res => console.log(res));
+
     }
 
     //https://github.com/googleapis/google-api-nodejs-client
     createFile = (name) => {        
-        return new Promise((resolve, reject) => {
-            window.gapi.client.drive.files.create({
-                name: name,
-                media: {
-                    mimeType: 'text/plain',
-                },
-            }).then((resp) => resolve(resp))
-        })
+
     }
 
 
@@ -59,17 +67,26 @@ export default class Drive{
     //https://github.com/googleapis/google-api-nodejs-client
     //https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/drive/download.js
     getFile = (file) => {
+        console.log(file)
+        const dest = fs.createWriteStream(file.name);
+        let progress = 0;
         this.drive.files.get({
             fileId: file.id,
             alt: 'media'
-        })
-        .on('end', () => console.log("Done"))
-        .on('error', (err) => console.log("Error during download", err))
-        .pipe(this.fp);
-        /*console.log(file)
-        window.gapi.client.drive.files.get({
-            fileId: file.id,
-            alt: 'media',
-        }).then(response => this.fp.writeFile(file.dir, response.body))*/
+        }, {
+            responseType: 'stream'
+        }, (err, res) => {
+        
+            res.data.on('end', () => {
+                console.log('Done downloading file.');
+            })
+            .on('error', err => {
+                console.error('Error downloading file.');
+            })
+            .on('data', d => {
+                progress += d.length;
+                console.log("Progress", progress)
+            })
+            .pipe(dest)})
     }
 }
