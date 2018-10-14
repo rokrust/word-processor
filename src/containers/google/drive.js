@@ -82,7 +82,6 @@ export default class DriveV3{
         })
     }
 
-    //https://github.com/googleapis/google-api-nodejs-client
     createFile = (file, parents) => {        
         return new Promise((resolve, reject) => {
             this.drive.files.create({
@@ -101,11 +100,6 @@ export default class DriveV3{
         })
     }
 
-
-
-    //https://stackoverflow.com/questions/23406391/basic-file-download-example
-    //https://github.com/googleapis/google-api-nodejs-client
-    //https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/drive/download.js
     getFile = (file) => {
         const dest = fs.createWriteStream(file.name);
         let progress = 0;
@@ -151,7 +145,7 @@ class Fields {
     }
 
     replace = (fields) => {
-        this.remove()
+        this.clear()
         this.add(fields)
     }
 

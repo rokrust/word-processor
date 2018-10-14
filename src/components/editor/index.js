@@ -17,6 +17,7 @@ export default class Editor extends Component{
     }
 
     render() {
+        console.log(window.location.pathname)
         return (
             <ReactQuill 
                 theme="snow"

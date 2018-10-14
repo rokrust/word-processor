@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import GoogleSignIn from './pages/google-signin';
-import styled from 'styled-components'
+import Main from './pages/main'
 import Google from './containers/google'
+import { Link, Switch, Route } from 'react-router-dom'
 
 class App extends Component {
   constructor(){
@@ -19,7 +20,10 @@ class App extends Component {
           <img src={logo} className="App-logo" alt="logo" />
           <h1 className="App-title">Welcome to write porgram</h1>
         </header>
-        <GoogleSignIn />
+        <Switch>
+          <Route exact path='/' component={Main}/>
+          <Route exact path='/googleSignIn' component={GoogleSignIn}/>
+        </Switch>
       </div>
     );
   }
