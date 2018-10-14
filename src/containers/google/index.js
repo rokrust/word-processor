@@ -115,25 +115,6 @@ export default class Google{
         });
     }
 
-    listFiles() {
-        const drive = google.drive({version: 'v3', auth: this.oauth2Client});
-        drive.files.list({
-            pageSize: 10,
-            fields: 'nextPageToken, files(id, name)',
-        }, (err, res) => {
-            if (err) return console.log('The API returned an error: ' + err);
-            const files = res.data.files;
-            if (files.length) {
-                console.log('Files:');
-                files.map((file) => {
-                console.log(`${file.name} (${file.id})`);
-            });
-            } else {
-                console.log('No files found.');
-            }
-        });
-    }
-
     //Sets the api member object if it is provided
     //Checks the objects provided by default if not
     //Alerts the user if no object can be found
