@@ -63,9 +63,12 @@ export default class Google{
         for (let api in requestedApis){
             let apiOpts = requestedApis[api]
 
-            this.scopes.push(this._createScopeURL(api, apiOpts.permission))
+            if(typeof apiOpts.permission === 'string') apiOpts.permission = [apiOpts.permission]
+
+            this.scopes = apiOpts.permission.map(elem => this._createScopeURL(api, elem))
             this._setApiObject(api, apiOpts)
         }
+        console.log(this.scopes)
     }
 
 

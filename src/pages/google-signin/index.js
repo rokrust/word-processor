@@ -31,21 +31,14 @@ export default class GoogleSignIn extends Component {
     componentDidMount() {
         const apis = {
             drive: {
-              permission: 'file',
+              permission: ['file', 'appfolder'],
               version: 'v3',
             },
         }
 
         this.google.initializeWithToken(apis, 'config/token.json')
-        .then(() => {
-            this.google.drive.listAllFolders()
-            .then(res => console.log(res))
-            //this.google.drive.createFolder(TestFolder)
-            /*this.google.drive.insertFileInFolderByName({
-                name: 'test.txt',
-                path: 'newtest.txt'
-            }, 'yolo')*/
-        })
+        .then(() => this.google.drive.listAllFolders())
+        .then(res => console.log(res))
         .catch((err) => {
             console.log(err)
             this.google.initialize(apis)
