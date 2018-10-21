@@ -1,15 +1,34 @@
+import { StringDecoder } from "string_decoder";
+
 export default class QuillIndexing {
     constructor(quillRef) {
         this.quill = quillRef
+        this.seperationCharacters = [];
+    }
+
+    getAllWordRanges = () => {
+        let currentWord = {index: -1, length: 0}
+        let nextWord = this.getWordRange(0)
+        let ranges = []
+        
+        while(currentWord.index !== nextWord.index) {
+            if(nextWord.length !== -1) ranges.push(nextWord)
+            currentWord = nextWord
+            nextWord = this.getNextWordRange(currentWord.index)
+        }
+
+        return ranges
     }
 
     addPrevWordToSelection = (currentSelection) => {
-        let firstWord = this.getWordSelection(currentSelection.index)
+        let firstWord = this.getWordRange(currentSelection.index)
         let end = this.getEndIndex(currentSelection)
-        let lastWord = this.getWordSelection(end ? end - 1 : end)
+        let lastWord = this.getWordRange(end ? end - 1 : end)
 
         //Set prev word based on if a whole word has been selected or not
-        let nextWord = firstWord.index !== currentSelection.index ? firstWord : this.getPrevWordSelection(currentSelection.index)
+        let nextWord = firstWord.index !== currentSelection.index ? firstWord : this.getPrevWordRange(currentSelection.index)
+
+        if(nextWord.length === -1) nextWord = this.getSepRange(nextWord.index)
 
         this.quill.setSelection({
             index: nextWord.index,
@@ -18,12 +37,14 @@ export default class QuillIndexing {
     }
 
     addNextWordToSelection = (currentSelection) => {
-        let firstWord = this.getWordSelection(currentSelection.index)
+        let firstWord = this.getWordRange(currentSelection.index)
         let end = this.getEndIndex(currentSelection)
-        let lastWord = this.getWordSelection(end ? end - 1 : end)   //Handles index of 0
-        
+        let lastWord = this.getWordRange(end)   //Handles index of 0
+
+        if(end === this.quill.getLength() - 1) return //Text is selected all the way to the end. Exit function
+
         //Set nextword based on if a whole word has been selected or not
-        let nextWord = end !== this.getEndIndex(lastWord) ? lastWord : this.getNextWordSelection(end - 1)
+        let nextWord = end !== this.getEndIndex(lastWord) ? lastWord : this.getNextWordRange(end - 1)
 
         this.quill.setSelection({
             index: firstWord.index,
@@ -33,7 +54,7 @@ export default class QuillIndexing {
     }
 
     removeFirstWordFromSelection = (currentSelection) => {
-        let secondWord = this.getNextWordSelection(currentSelection.index)
+        let secondWord = this.getNextWordRange(currentSelection.index)
 
         this.quill.setSelection({
             index: secondWord.index,
@@ -42,8 +63,8 @@ export default class QuillIndexing {
     }
 
     removeLastWordFromSelection = (currentSelection) => {
-        let lastWord = this.getWordSelection(this.getEndIndex(currentSelection) - 1)
-        let secondLastWord = this.getPrevWordSelection(this.getEndIndex(lastWord) - 1)
+        let lastWord = this.getWordRange(this.getEndIndex(currentSelection) - 1)
+        let secondLastWord = this.getPrevWordRange(this.getEndIndex(lastWord) - 1)
 
         this.quill.setSelection({
             index: currentSelection.index,
@@ -51,34 +72,39 @@ export default class QuillIndexing {
         })
     }
 
-    remove = (currentSelection) => {
-        
-    }
-
-    getNextWordSelection(index) {
-        let thisWord = this.getWordSelection(index)
-        for(let i = this.getEndIndex(thisWord); i < 50; i++){
+    //Get the selection range of the closest word right of marker
+    getNextWordRange(index) {
+        let thisWord = this.getWordRange(index)
+        for(let i = this.getEndIndex(thisWord); i < this.quill.getLength(); i++){
             var currChar = this.quill.getText(i, 1)
             
             //Next word reached
             if(!this._isSepChar(currChar)) {
-                return this.getWordSelection(i)
+                return this.getWordRange(i)
             }
         }
+
+        //End of text
+        return {index, length: this.quill.getLength() - index}//this.getWordRange(this.quill.getLength() - 1)
     }
 
-    getPrevWordSelection(index) {
-        let thisWord = this.getWordSelection(index)
+    //Get the selection range of the closest word left of selection
+    getPrevWordRange(index) {
+        let thisWord = this.getWordRange(index)
         for(let i = thisWord.index - 1; i > -1; i--){
             var currChar = this.quill.getText(i, 1)
 
             //Prev word reached
             if(!this._isSepChar(currChar)) {
-                return this.getWordSelection(i)
+                return this.getWordRange(i)
             }
         }
+
+        //Start of text
+        return this.getWordRange(0)
     }
 
+    //Get the end of selection as an index
     getEndIndex(range){
         return range.index + range.length
     }
@@ -87,8 +113,9 @@ export default class QuillIndexing {
         return /[^a-zA-Z0-9|^$]/.test(char) || char === ''
     }
 
-    getWordSelection(index){
-        let selection = {}
+    //Get the range of the word with a character at $index
+    getWordRange(index){
+        let selection = {index}
 
         //Find start index
         for(let i = 0; true; i++){
@@ -111,9 +138,33 @@ export default class QuillIndexing {
         return selection
     }
 
-    //Will select a word at wordPos
-    selectWordByIndex = (wordPos) => {
-        let selection = this.getWordSelection(wordPos)
+    //Get the selection range of a series of separation chars
+    getSepRange(index) {
+        let selection = {index: 0, length: 0}
+        //Find start index
+        for(let i = 0; i < index + 1; i++){
+            let char = this.quill.getText(index-i, 1)
+            if(!this._isSepChar(char)){
+                selection.index = index - i + 1
+                break;
+            }
+        }
+
+        //Find end index
+        for(let i = 0; this.quill.getLength(); i++){
+            let char = this.quill.getText(index+i, 1)
+            if(!this._isSepChar(char)){
+                selection.length = index - selection.index + i
+                break;
+            }
+        }
+
+        return selection
+    }
+
+    //Selects the word at $index
+    selectWordByIndex = (index) => {
+        let selection = this.getWordRange(index)
         this.quill.setSelection(selection)
     }
 

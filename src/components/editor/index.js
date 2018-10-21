@@ -4,7 +4,7 @@ import 'react-quill/dist/quill.snow.css'
 import styled from 'styled-components'
 import QuillIndexing from '../../containers/quill-indexing'
 
-import Clickable from './blots/clickable'
+import Clickable, {LeftClickable, RightClickable, Hoverable} from './blots/clickable'
 
 //Blots
 // TODO 
@@ -12,7 +12,7 @@ import Clickable from './blots/clickable'
 //  https://stackoverflow.com/questions/45151080/add-hover-click-handlers-to-quill-blots
 //  https://stackoverflow.com/questions/47625666/add-custom-div-to-selected-clicked-on-text-with-quill
 //  https://github.com/quilljs/quill/issues/1971
-const formats = ["clickable", "bold"];
+const formats = ["bold", "underline", "clickable", "left-clickable", "right-clickable", "hoverable"];
 
 /*var ops = [
     {
@@ -30,10 +30,13 @@ var content = new Delta(ops)
 export default class Editor extends Component{
     constructor(){
         super()
-        this.state = { text: "Lorem Ipsum Dolor: \"Sit Amet\"" }
+        this.state = { text: ".....Lorem Ipsum Dolor: \"Sit Amet\"" }
         this.formats = formats
         
         Quill.register(Clickable)
+        Quill.register(RightClickable)
+        Quill.register(LeftClickable)
+        Quill.register(Hoverable)
     }
 
     handleChange = (value, delta) => {
@@ -41,19 +44,40 @@ export default class Editor extends Component{
     }
 
     removeFormat = () => {
-        console.log(this.quill.getBounds(this.quill.getSelection()))
+        //let selection = this.quill.getSelection()
         //this.quill.removeFormat(selection.index, selection.length, 'user')
+        console.log(this.quill.getSelection())
     }
 
+    formatAllWords = (format) => {
+        let selection = this.quill.getSelection()
+        this.indexing.getAllWordRanges().forEach(item => {
+            this.quill.setSelection(item) 
+            this.quill.format(format, '/')
+        })
+        this.quill.setSelection(selection)
+    }
+    
     formatClickable = () => {
         this.quill.format('clickable', '/')
-        console.log(this.quill.getContents())
+    }
+
+    formatLClickable = () => {
+        this.quill.format('left-clickable', '/')
+    }
+
+    formatRClickable = () => {
+        this.quill.format('right-clickable', '/')
+    }
+
+    formatHoverable = () => {
+        this.quill.format('hoverable', '/')
     }
 
     componentDidMount() {
         this.quill = this.reactQuillRef.getEditor()
         this.indexing = new QuillIndexing(this.quill)
-        
+        console.log(this.indexing.getAllWordRanges())
     }
 
     leftSelect = () => {
@@ -80,7 +104,7 @@ export default class Editor extends Component{
     render() {
         
         return (
-            <MainWrapper>
+            <MainWrapper className="Main">
                 <button onClick={this.formatClickable}>Make clickable</button>
                 <button onClick={this.leftRemove}>→</button>
                 <button onClick={this.leftSelect}>←</button>
@@ -91,10 +115,9 @@ export default class Editor extends Component{
                     ref = {el => this.reactQuillRef = el}
                     theme="snow"
                     value={this.state.text}
-                    placeholder="Placeholder test value"
                     onChange={this.handleChange}
                     formats={this.formats}
-                />
+                ><MainWrapper/></ReactQuill>
             </MainWrapper>
         );
     }
