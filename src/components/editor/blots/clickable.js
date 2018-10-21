@@ -2,11 +2,10 @@ import { Quill } from 'react-quill'
 let Inline = Quill.import('blots/inline')
 
 class Clickable extends Inline {
-    static create(path) {
+    static create(path, ) {
         let node = super.create()
 
         node.setAttribute('path', path)
-        node.setAttribute('target', '_blank')
         node.addEventListener('click', e => console.log("Clicked text"))
         node.addEventListener('contextmenu', e => console.log("Right clicked text"))
         node.addEventListener('mouseover', e => console.log("Mouseover text"))
