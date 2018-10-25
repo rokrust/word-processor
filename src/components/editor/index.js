@@ -30,9 +30,12 @@ var content = new Delta(ops)
 export default class Editor extends Component{
     constructor(){
         super()
-        this.state = { text: ".....Lorem Ipsum Dolor: \"Sit Amet\"" }
+        this.state = { 
+            text: ".....Lorem Ipsum Dolor: \"Sit Amet\"",
+            clicked: false
+        }
         this.formats = formats
-        
+        console.log("Constructor")
         Quill.register(Clickable)
         Quill.register(RightClickable)
         Quill.register(LeftClickable)
@@ -40,6 +43,7 @@ export default class Editor extends Component{
     }
 
     handleChange = (value, delta) => {
+        console.log(delta)
         this.setState({ text: value })
     }
 
@@ -49,17 +53,28 @@ export default class Editor extends Component{
         console.log(this.quill.getSelection())
     }
 
-    formatAllWords = (format) => {
-        let selection = this.quill.getSelection()
-        this.indexing.getAllWordRanges().forEach(item => {
-            this.quill.setSelection(item) 
-            this.quill.format(format, '/')
+    test = () => {
+        this.formatAllWords('clickable', {
+            path: '/',
+            onClick: () => window.open('https://en.wikipedia.org'),//this.setState({clicked: true}),
+            onRightClick: () => console.log("Right click"),
+            onMouseOver: () => window.open('https://www.google.no')
         })
-        this.quill.setSelection(selection)
+    }
+
+    formatAllWords = (format, value) => {
+        this.indexing.getAllWordRanges().forEach(item => {
+            this.quill.formatText(item.index, item.length, format, value, 'user')
+        })
     }
     
     formatClickable = () => {
-        this.quill.format('clickable', '/')
+        this.quill.format('clickable', {
+            path: '/',
+            onClick: () => this.setState({clicked: true}),
+            onRightClick: () => console.log("Right click"),
+            onMouseOver: () => this.setState({clicked: true})
+        })
     }
 
     formatLClickable = () => {
@@ -77,7 +92,6 @@ export default class Editor extends Component{
     componentDidMount() {
         this.quill = this.reactQuillRef.getEditor()
         this.indexing = new QuillIndexing(this.quill)
-        console.log(this.indexing.getAllWordRanges())
     }
 
     leftSelect = () => {
@@ -105,19 +119,16 @@ export default class Editor extends Component{
         
         return (
             <MainWrapper className="Main">
-                <button onClick={this.formatClickable}>Make clickable</button>
-                <button onClick={this.leftRemove}>→</button>
-                <button onClick={this.leftSelect}>←</button>
-                <button onClick={this.rightSelect}>→</button>
-                <button onClick={this.rightRemove}>←</button>
-                <button onClick={this.removeFormat}>Remove format</button>
-                <ReactQuill 
+                <button onClick={this.test}>Yolo</button>
+                {this.state.clicked ? <p>Clicked!</p> : null}
+                <ReactQuill
+                    style={{position: 'absolute', height: '100%', width: '100%'}} 
                     ref = {el => this.reactQuillRef = el}
-                    theme="snow"
+                    theme='snow'
                     value={this.state.text}
                     onChange={this.handleChange}
                     formats={this.formats}
-                ><MainWrapper/></ReactQuill>
+                />
             </MainWrapper>
         );
     }

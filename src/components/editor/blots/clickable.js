@@ -47,13 +47,13 @@ Clickable.tagName = 'clk'
 
 
 class Clickable extends Inline {
-    static create(path, ) {
+    static create(data) {
+        console.log(data)
         let node = super.create()
-
-        node.setAttribute('path', path)
-        node.addEventListener('click', e => console.log("Clicked text"))
-        node.addEventListener('contextmenu', e => console.log("Right clicked text"))
-        node.addEventListener('mouseover', e => console.log("Mouseover text"))
+        node.setAttribute('path', data.path)
+        node.addEventListener('click', e => data.onClick(e))
+        node.addEventListener('contextmenu', e => data.onRightClick(e))
+        node.addEventListener('mouseover', e => data.onMouseOver(e))
         return node
     }
 

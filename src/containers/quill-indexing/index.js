@@ -1,5 +1,3 @@
-import { StringDecoder } from "string_decoder";
-
 export default class QuillIndexing {
     constructor(quillRef) {
         this.quill = quillRef
