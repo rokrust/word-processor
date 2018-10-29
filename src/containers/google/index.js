@@ -1,4 +1,5 @@
 import DriveV3 from './drive'
+import NLP from './nlp'
 //import { OAuth2Client } from 'google-auth-library';
 //var config = require('../../config')
 //const readline = window.require('readline')
@@ -15,6 +16,9 @@ const {google} = window.require('googleapis')
 const API_OBJECTS = {
     drive: {
         v3: DriveV3
+    },
+    NLP : {
+        v1: NLP
     }
 }
 
@@ -38,6 +42,7 @@ export default class Google{
     //  tokenPath: path to token json file
     initializeWithToken = (requestedApis, tokenPath) => {
         return new Promise((resolve, reject) => {
+            console.log("Reading stored token")
             this._readStoredToken(tokenPath)
             .then(token => {
                 console.log("File found")
@@ -51,7 +56,7 @@ export default class Google{
             })
             .catch(err => {
                 console.warn(`Could not find a token at "${tokenPath}".`)
-                reject()
+                reject(err)
             })
         })
     }
@@ -63,9 +68,9 @@ export default class Google{
         for (let api in requestedApis){
             let apiOpts = requestedApis[api]
 
-            if(typeof apiOpts.permission === 'string') apiOpts.permission = [apiOpts.permission]
+            if(typeof apiOpts.permission === 'string') apiOpts.permission = [apiOpts.permission]            //Turn string into array
+            if(apiOpts.permission) this.scopes = apiOpts.permission.map(elem => this._createScopeURL(elem)) //add scope if it is defined
 
-            this.scopes = apiOpts.permission.map(elem => this._createScopeURL(api, elem))
             this._setApiObject(api, apiOpts)
         }
         console.log(this.scopes)
@@ -123,10 +128,13 @@ export default class Google{
     //Alerts the user if no object can be found
     _setApiObject = (api, apiOpts) => {
         //Set authorization method. Oauth2 is default
-        let auth = apiOpts.auth ? apiOpts.auth : this.oauth2Client;
+        let auth = apiOpts.auth || this.oauth2Client;
 
         //Create the object for the given api with oauth
-        let apiObj = google[api]({version: apiOpts.version, auth})
+        let apiObj;
+        if(auth !== 'service account'){
+            apiObj = google[api]({version: apiOpts.version, auth})
+        }
         
         //Object supplied to constructor
         if(apiOpts.object){
@@ -141,9 +149,8 @@ export default class Google{
         }
     }
 
-    _createScopeURL(api, permission) {
-        let scopeLink = 'https://www.googleapis.com/auth/' + api
-        return permission ? scopeLink + '.' + permission : scopeLink
+    _createScopeURL(permission) {
+        return 'https://www.googleapis.com/auth/' + permission
     }
 
 }

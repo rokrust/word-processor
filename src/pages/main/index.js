@@ -1,5 +1,6 @@
 import React, {Component} from 'react'
 import Editor from './../../components/editor'
+import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 
 export default class Main extends Component{
@@ -10,6 +11,11 @@ export default class Main extends Component{
     render() {
         return (
             <MainWrapper>
+                <Link to="/googleSignIn" >
+                    <button>
+                        Google
+                    </button>
+                </Link>
                 <Editor/>
             </MainWrapper>
         );

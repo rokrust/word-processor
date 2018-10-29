@@ -3,8 +3,6 @@
 
 //Needed for promisify to work
 const fs = window.require('fs')
-const util = require('util')
-require('util.promisify').shim();
 
 export default class DriveV3{
     constructor(drive){
@@ -58,8 +56,8 @@ export default class DriveV3{
         try{
             const folder = await this.listAllFolders(`name contains '${folderName}'`)
             console.log(folder)
-            if(folder.length > 1) throw 'Multiple folders by the same name'
-            if(folder.length === 0) throw `No folder found matching name ${folderName}`
+            if(folder.length > 1) throw Error('Multiple folders by the same name')
+            if(folder.length === 0) throw Error(`No folder found matching name ${folderName}`)
 
             this.createFile(file, [folder[0].id])
         } catch (error){

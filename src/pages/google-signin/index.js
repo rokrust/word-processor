@@ -1,6 +1,8 @@
 import React, {Component} from 'react'
 import Google from '../../containers/google';
 import Authentication from './authentication'
+const language = window.require('@google-cloud/language')
+
 
 
 export default class GoogleSignIn extends Component {
@@ -31,16 +33,20 @@ export default class GoogleSignIn extends Component {
     componentDidMount() {
         const apis = {
             drive: {
-              permission: ['file', 'appfolder'],
+              permission: ['drive.file', 'drive.appfolder'],
               version: 'v3',
             },
+            nlp: {
+                
+                permission: 'cloud-language',
+                version: 'v1',
+                object: language.LanguageServiceClient,
+                auth: 'service account'
+            }
         }
-
         this.google.initializeWithToken(apis, 'config/token.json')
-        .then(() => this.google.drive.listAllFolders())
         .then(res => console.log(res))
         .catch((err) => {
-            console.log(err)
             this.google.initialize(apis)
             this.setState({authenticationNeeded: true})
         })
