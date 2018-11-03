@@ -1,12 +1,7 @@
 import DriveV3 from './drive'
-import NLP from './nlp'
-//import { OAuth2Client } from 'google-auth-library';
-//var config = require('../../config')
-//const readline = window.require('readline')
-const fs = window.require('fs')
 const config = window.require('dotenv').config().parsed
 const {google} = window.require('googleapis')
-
+const fs = window.require('fs')
 //List of scopes
     //https://developers.google.com/identity/protocols/googlescopes
 //Discovery URI
@@ -17,9 +12,6 @@ const API_OBJECTS = {
     drive: {
         v3: DriveV3
     },
-    NLP : {
-        v1: NLP
-    }
 }
 
 export default class Google{
@@ -131,10 +123,7 @@ export default class Google{
         let auth = apiOpts.auth || this.oauth2Client;
 
         //Create the object for the given api with oauth
-        let apiObj;
-        if(auth !== 'service account'){
-            apiObj = google[api]({version: apiOpts.version, auth})
-        }
+        let apiObj = google[api]({version: apiOpts.version, auth})
         
         //Object supplied to constructor
         if(apiOpts.object){
@@ -154,3 +143,6 @@ export default class Google{
     }
 
 }
+
+
+export {default as GoogleCloud} from './cloud'

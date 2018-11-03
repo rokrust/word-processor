@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import Google from '../../containers/google';
+import Google, {GoogleCloud} from '../../containers/google';
 import Authentication from './authentication'
 const language = window.require('@google-cloud/language')
 
@@ -13,6 +13,38 @@ export default class GoogleSignIn extends Component {
         }
 
         this.google = new Google();
+        this.googleCloud = new GoogleCloud();
+    }
+
+    initializeClient = () => {
+        //Client
+        const apis = {
+            drive: {
+              permission: ['drive.file', 'drive.appfolder'],
+              version: 'v3',
+            }
+        };
+
+        this.google.initializeWithToken(apis, 'config/token.json')
+        .then(res => console.log(res))
+        .catch((err) => {
+            console.log(err)
+            this.google.initialize(apis)
+            this.setState({authenticationNeeded: true})
+        });
+    }
+
+    initializeCloud = () => {
+        //Cloud
+        const cloudApis = {
+            nlp: {                
+                permission: 'cloud-language',
+                version: 'v1',
+                object: language.LanguageServiceClient,
+            }
+        };
+
+        this.googleCloud.initialize(cloudApis)
     }
 
     onCodeRecieved = (code) => {
@@ -31,25 +63,9 @@ export default class GoogleSignIn extends Component {
     }
 
     componentDidMount() {
-        const apis = {
-            drive: {
-              permission: ['drive.file', 'drive.appfolder'],
-              version: 'v3',
-            },
-            nlp: {
-                
-                permission: 'cloud-language',
-                version: 'v1',
-                object: language.LanguageServiceClient,
-                auth: 'service account'
-            }
-        }
-        this.google.initializeWithToken(apis, 'config/token.json')
-        .then(res => console.log(res))
-        .catch((err) => {
-            this.google.initialize(apis)
-            this.setState({authenticationNeeded: true})
-        })
+        //Cloud services must be requested separately from client APIs
+        this.initializeClient();
+        this.initializeCloud();
     }
 
     render() {
